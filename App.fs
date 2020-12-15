@@ -138,10 +138,9 @@ module Model =
             tweet: string
         }
 
-
-    type GetAllTweets = 
+     type GetAllTweets = 
         {
-           userId : string list []
+           foundTweets : list<string>
         }
 
 
@@ -347,12 +346,7 @@ module Backend =
 
             // Error(Http.Status.Forbidden, {error = err})
 
-    let GetTweets () : ApiResult<string list []> =
-        lock mapUserNametoTweets <| fun () ->
-            mapUserNametoTweets
-            |> Seq.map (fun (KeyValue(_, tweet)) -> tweet)
-            |> Array.ofSeq
-            |> Ok
+    
                
     let PostFollow (data: FollowData) : ApiResult<Resp> = 
         let wantsToFollow = data.userId1
@@ -476,7 +470,17 @@ module Backend =
     let mentiontagNotFound() : ApiResult<'T> =
         Error (Http.Status.NotFound, { error = "HashTag not found." })
 
+    let GetTweets () : ApiResult<GetAllTweets> =
+        let mutable finalTweets : list<string> = List.Empty
+        for KeyValue(_, tweet) in mapUserNametoTweets do
+            finalTweets<- finalTweets @ tweet
 
+        Ok{foundTweets = finalTweets}
+        // lock mapUserNametoTweets <| fun () ->
+        //     mapUserNametoTweets
+        //     |> Seq.map (fun (KeyValue(_, tweet)) -> tweet)
+        //     |> Array.ofSeq
+        //     |> Ok {foundTweets = }
     
 
     let GetHashtag (word: string) : ApiResult<HashTagResponse> =
@@ -496,12 +500,7 @@ module Backend =
         | false, _ -> mentiontagNotFound()
 
     
-    let GetHashtagMentiontag (data : HashtagMentiontag) : ApiResult<Set<string>> =
-        let hashtag = data.hashtag
-        let mentiontag = data.mentiontag
-        match mapUserToMentionTags.TryGetValue(hashtag) with
-        | true, tweets -> Ok tweets  
-        | false, _ -> mentiontagNotFound()
+   
         
 
 

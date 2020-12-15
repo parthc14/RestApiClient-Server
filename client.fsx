@@ -127,6 +127,24 @@ let getTweetsWithMentionTag mentionTagtoRequest =
     | _ -> printfn "No tweets with the @%s found" mentionTagtoRequest
 
 
+let getAllLiveTweets() =
+    try
+        let url = "http://localhost:5000/api/tweets"
+        let a = FSharp.Data.JsonValue.Load url
+        let c = a.GetProperty("foundTweets")
+        let mutable len=0
+        for i in c do
+            len<-len+1
+        if len > 0 then
+            printfn "All live tweets are :"
+            for i in c do
+                printfn "%A" i
+            
+    with
+    | _ -> printfn "No tweets with the found. "
+
+
+
 let mutable flag = true
 let mutable tweetFlag = true
 let mutable followFlag = true
@@ -221,6 +239,9 @@ while flag do
 
         | _-> printfn "Invalid Input"
 
+    | "8" -> 
+        let response = getAllLiveTweets()
+        printf "%s" (string(response))
 
     | "9" -> flag<-false
         
