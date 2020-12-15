@@ -24,3 +24,4 @@ X:/University/DOS/Twitter/part2/dos-twitter-2/src/obj/Debug/netcoreapp2.0/People
 /home/parth-pc/Desktop/DOS/src/obj/Debug/netcoreapp2.0/PeopleApi.dll
 /home/parth-pc/Desktop/DOS/src/obj/Debug/netcoreapp2.0/PeopleApi.pdb
 /home/parth-pc/Desktop/DOS/src/obj/Debug/netcoreapp2.0/PeopleApi.genruntimeconfig.cache
+/home/parth-pc/Desktop/DOS/src/bin/Debug/netcoreapp2.0/tempJson.json

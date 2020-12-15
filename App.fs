@@ -63,7 +63,7 @@ module Model =
         | [<EndPoint "POST /subscribe"; Json "subscribeData">] PostSubscribe of subscribeData: SubscribeData
         | [<EndPoint "GET /tweets/hashtag">] GetHashtag of word: string
         | [<EndPoint "GET /tweets/mentiontag">] GetMentiontag of word: string
-        | [<EndPoint "GET /tweets/hashtagMentiontag">] GetHashtagMentiontag of hashtagMentiontag: HashtagMentiontag
+
 
 
 
@@ -127,7 +127,7 @@ module Model =
 
     type HashTagResponse= 
         {
-            resp: Set<string>
+            foundTweets: Set<string>
         }
 
 
@@ -201,7 +201,8 @@ module Backend =
         printfn "\nLOG: User %A attempting to create an account. %A" data.userId data.status
         if allUsers.Contains(data.userId) then
             let err = sprintf "User already exists in the registry"
-            Error(Http.Status.Forbidden, {error = err})
+            // Error(Http.Status.Forbidden, {error = err})
+            Ok { resp = err }
         else 
             allUsers <- allUsers.Add(data.userId)
             let status = strToBool(data.status)
@@ -230,13 +231,19 @@ module Backend =
                     Ok { resp = data.userId }
                 | None ->
                     let err = sprintf "Key does not exist"
-                    Error(Http.Status.Forbidden, {error = err})
+                    // Error(Http.Status.Forbidden, {error = err})
+                    Ok { resp = err }
+
             else 
                 let err = sprintf "User already logged in."
-                Error(Http.Status.Forbidden, {error = err})
+                // Error(Http.Status.Forbidden, {error = err})
+                Ok { resp = err }
+
         else
             let err = sprintf "User not registered. Please Register."
-            Error(Http.Status.Forbidden, {error = err})
+            Ok { resp = err }
+
+            // Error(Http.Status.Forbidden, {error = err})
 
 
     let LogoutUser(data:LoginData) : ApiResult<Resp> = 
@@ -256,13 +263,19 @@ module Backend =
                     Ok { resp = data.userId }
                 | None ->
                     let err = sprintf "Key does not exist"
-                    Error(Http.Status.Forbidden, {error = err})
+                    Ok { resp = err }
+
+                    // Error(Http.Status.Forbidden, {error = err})
             else 
                 let err = sprintf "User not logged in."
-                Error(Http.Status.Forbidden, {error = err})
+                Ok { resp = err }
+
+                // Error(Http.Status.Forbidden, {error = err})
         else
             let err = sprintf "User not registered. Please Register."
-            Error(Http.Status.Forbidden, {error = err})
+            Ok { resp = err }
+
+            // Error(Http.Status.Forbidden, {error = err})
                 
 
     let splitLine = (fun (line:string)->Seq.toList(line.Split " "))
@@ -323,10 +336,16 @@ module Backend =
                 Ok{userId = username ; tweet =  tweet}
             else 
                 let err = sprintf "User not logged in."
-                Error(Http.Status.Forbidden, {error = err}) 
+                Ok { userId = ""; tweet = err }
+
+                // Error(Http.Status.Forbidden, {error = err}) 
         else 
             let err = sprintf "User is not registered."
-            Error(Http.Status.Forbidden, {error = err})
+            Ok { userId = "" ; tweet = err }
+            
+            
+
+            // Error(Http.Status.Forbidden, {error = err})
 
     let GetTweets () : ApiResult<string list []> =
         lock mapUserNametoTweets <| fun () ->
@@ -356,7 +375,9 @@ module Backend =
                     
                     if alreadyFollowing then
                         let err = sprintf "%s alrready follows %s." wantsToFollow isFollowedBy
-                        Error(Http.Status.Forbidden, {error = err})
+                        Ok { resp = err }
+
+                        // Error(Http.Status.Forbidden, {error = err})
                     else
                         temp <- temp @ [wantsToFollow]
                         followersMap <- followersMap.Add(isFollowedBy, temp)
@@ -369,14 +390,20 @@ module Backend =
                         Ok{resp = finalStr}
                 else
                     let err = sprintf "%s please login to follow %s" wantsToFollow isFollowedBy
-                    Error(Http.Status.Forbidden, {error = err})
+                    // Error(Http.Status.Forbidden, {error = err})
+                    Ok { resp = err }
+
                     
             else 
                 let err = sprintf "%s named user does not exist" isFollowedBy
-                Error(Http.Status.Forbidden, {error = err})
+                // Error(Http.Status.Forbidden, {error = err})
+                Ok { resp = err }
+
         else 
             let err = sprintf "%s is not registered. Please Register" wantsToFollow
-            Error(Http.Status.Forbidden, {error = err})
+            // Error(Http.Status.Forbidden, {error = err})
+            Ok { resp = err }
+
 
 
     let PostSubscribe(data:SubscribeData) : ApiResult<SubscribeResponse> = 
@@ -452,20 +479,20 @@ module Backend =
 
     
 
-    let GetHashtag (word: string) : ApiResult<Set<string>> =
+    let GetHashtag (word: string) : ApiResult<HashTagResponse> =
         lock mapUserToHashTags <| fun () ->
         
         match mapUserToHashTags.TryGetValue(word) with
-        | true, tweets -> Ok tweets  
+        | true, tweets -> Ok {foundTweets = tweets}
         | false, _ -> hashtagNotFound()
 
 
 
-    let GetMentiontag (word: string) : ApiResult<Set<string>> =
+    let GetMentiontag (word: string) : ApiResult<HashTagResponse> =
         lock mapUserToMentionTags <| fun () ->
         
         match mapUserToMentionTags.TryGetValue(word) with
-        | true, tweets -> Ok tweets  
+        | true, tweets -> Ok {foundTweets = tweets}  
         | false, _ -> mentiontagNotFound()
 
     
@@ -583,7 +610,7 @@ module Site =
         | PostSubscribe subscribeData-> JsonContent(Backend.PostSubscribe subscribeData)
         | GetHashtag word -> JsonContent(Backend.GetHashtag word)
         | GetMentiontag word -> JsonContent(Backend.GetMentiontag word)
-        | GetHashtagMentiontag hashtagMentiontag -> JsonContent(Backend.GetHashtagMentiontag hashtagMentiontag)
+        // | GetHashtagMentiontag hashtagMentiontag -> JsonContent(Backend.GetHashtagMentiontag hashtagMentiontag)
         | GetTweets -> JsonContent (Backend.GetTweets ())
         
 
