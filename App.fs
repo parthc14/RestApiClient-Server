@@ -73,40 +73,6 @@ module Model =
         | [<EndPoint "GET /retweets">] GetRetweet of id: string
         | [<EndPoint "POST /postRetweets"; Json "postRetweets">] PostRetweets of postRetweets: PostRetweetData
 
-
-
-
-
-
-
-        
-        // | [<EndPoint "POST /follow"; Json "followData">] PostFollow of followData: FollowData
-
-
-
-        /// Accepts GET requests to /people
-        // | [<EndPoint "GET /people">]
-        //     GetPeople
-
-        // /// Accepts GET requests to /people/{id}
-        // | [<EndPoint "GET /people">]
-        //     GetPerson of id: int
-
-        // /// Accepts POST requests to /people with PersonData as JSON body
-        // // | [<EndPoint "POST /people"; Json "personData">]
-        // //     CreatePerson of personData: PersonData
-
-        // | [<EndPoint "POST /people"; Json "registerData">]
-        //     RegisterUser of registerData: RegisterData
-
-        // /// Accepts PUT requests to /people with PersonData as JSON body
-        // | [<EndPoint "PUT /people"; Json "personData">]
-        //     EditPerson of personData: PersonData
-
-        // /// Accepts DELETE requests to /people/{id}
-        // | [<EndPoint "DELETE /people">]
-        //     DeletePerson of id: int
-
     /// The type of all endpoints for the application.
     type EndPoint =
         
@@ -124,16 +90,10 @@ module Model =
     /// The Error case contains an HTTP status and a JSON error to return.
     type ApiResult<'T> = Result<'T, Http.Status * Error>
 
-    /// Result value for CreatePerson.
-    // type Id = { id : int }
-    // type Username = { username : string }
+  
     type Resp = { resp: string }
 
-    // type SubscribeResponse = 
-    //     {
-    //         resp: list<string>
-    //     }
-
+  
     type HashTagResponse= 
         {
             foundTweets: Set<string>
@@ -203,7 +163,7 @@ module Backend =
     let CreateUser (data: UserData): ApiResult<Resp> =
         if allUsers.Contains(data.userId) then
             let err = sprintf "User already registered."
-            // Error(Http.Status.Forbidden, {error = err})
+           
             Ok { resp = err }
         else 
             allUsers <- allUsers.Add(data.userId)
@@ -237,19 +197,19 @@ module Backend =
                     Ok { resp = data.userId + " logged in." }
                 | None ->
                     let err = sprintf "Key does not exist"
-                    // Error(Http.Status.Forbidden, {error = err})
+                   
                     Ok { resp = err }
 
             else 
                 let err = sprintf "User already logged in."
-                // Error(Http.Status.Forbidden, {error = err})
+               
                 Ok { resp = err }
 
         else
             let err = sprintf "User not registered. Please Register."
             Ok { resp = err }
 
-            // Error(Http.Status.Forbidden, {error = err})
+           
 
 
     let LogoutUser(data:LoginData) : ApiResult<Resp> = 
@@ -272,17 +232,17 @@ module Backend =
                     let err = sprintf "Key does not exist"
                     Ok { resp = err }
 
-                    // Error(Http.Status.Forbidden, {error = err})
+                   
             else 
                 let err = sprintf "User not logged in."
                 Ok { resp = err }
 
-                // Error(Http.Status.Forbidden, {error = err})
+               
         else
             let err = sprintf "User not registered. Please Register."
             Ok { resp = err }
 
-            // Error(Http.Status.Forbidden, {error = err})
+           
                 
 
     let splitLine = (fun (line:string)->Seq.toList(line.Split " "))
@@ -343,14 +303,14 @@ module Backend =
                 let err = sprintf "User not logged in."
                 Ok { resp = err }
 
-                // Error(Http.Status.Forbidden, {error = err}) 
+                
         else 
             let err = sprintf "User is not registered."
             Ok { resp = err }
             
             
 
-            // Error(Http.Status.Forbidden, {error = err})
+           
 
     
                
@@ -361,7 +321,7 @@ module Backend =
         if isFollowedBy = wantsToFollow then
             let err = sprintf "User cannot follow itself."
             Ok { resp = err }
-            // Error(Http.Status.Forbidden, {error = err})
+
         elif allUsers.Contains(wantsToFollow) then
             if allUsers.Contains(isFollowedBy) then
                 if setOfLoggedInUsers.Contains(wantsToFollow) then
@@ -378,7 +338,7 @@ module Backend =
                         let err = sprintf "%s already follows %s." wantsToFollow isFollowedBy
                         Ok { resp = err }
 
-                        // Error(Http.Status.Forbidden, {error = err})
+
                     else
                         temp <- temp @ [wantsToFollow]
                         followersMap <- followersMap.Add(isFollowedBy, temp)
@@ -391,18 +351,18 @@ module Backend =
                         Ok{resp = finalStr}
                 else
                     let err = sprintf "%s please login to follow %s" wantsToFollow isFollowedBy
-                    // Error(Http.Status.Forbidden, {error = err})
+
                     Ok { resp = err }
 
                     
             else 
                 let err = sprintf "%s named user does not exist" isFollowedBy
-                // Error(Http.Status.Forbidden, {error = err})
+
                 Ok { resp = err }
 
         else 
             let err = sprintf "%s is not registered. Please Register" wantsToFollow
-            // Error(Http.Status.Forbidden, {error = err})
+
             Ok { resp = err }
 
 
@@ -420,7 +380,7 @@ module Backend =
                         let err = sprintf "%s must follow first to get subscribed tweets" username
                         Ok { foundTweets = [err] }
 
-                        // Error(Http.Status.Forbidden, {error = err})
+
                     else 
                         followersSet<- followersSet @ followingMap.Item(username)
                         
@@ -445,13 +405,13 @@ module Backend =
                                                  
             else
                 let err = sprintf "%s is not logged in. Please Login" username
-                // Error(Http.Status.Forbidden, {error = err})
+
                 Ok { foundTweets = [err] }
 
                 
         else
             let err = sprintf "%s is not registered. Please Register" username
-            // Error(Http.Status.Forbidden, {error = err})
+
             Ok { foundTweets = [err] }
 
 
@@ -528,80 +488,6 @@ module Backend =
 
 
 
-    /// The people database.
-    /// This is a dummy implementation, of course; a real-world application
-    /// would go to an actual database.
-    // let private people = new Dictionary<int, PersonData>()
-
-    // /// The highest id used so far, incremented each time a person is POSTed.
-    // let private lastId = ref 0
-
-    // let personNotFound() : ApiResult<'T> =
-    //     Error (Http.Status.NotFound, { error = "Person not found." })
-
-    // let GetPeople () : ApiResult<PersonData[]> =
-    //     lock people <| fun () ->
-    //         people
-    //         |> Seq.map (fun (KeyValue(_, person)) -> person)
-    //         |> Array.ofSeq
-    //         |> Ok
-
-    // let GetPerson (id: int) : ApiResult<PersonData> =
-    //     lock people <| fun () ->
-    //         match people.TryGetValue(id) with
-    //         | true, person -> Ok person
-    //         | false, _ -> personNotFound()
-
-    // let CreatePerson (data: PersonData) : ApiResult<Id> =
-    //     lock people <| fun () ->
-    //         incr lastId
-    //         people.[!lastId] <- { data with id = !lastId }
-    //         Ok { id = !lastId }
-
-
-    // let RegisterUser(data:RegisterData) : ApiResult<Username> = 
-    //     Ok{username = data.username}
-
-    // let EditPerson (data: PersonData) : ApiResult<Id> =
-    //     lock people <| fun () ->
-    //         match people.TryGetValue(data.id) with
-    //         | true, _ ->
-    //             people.[data.id] <- data
-    //             Ok { id = data.id }
-    //         | false, _ -> personNotFound()
-
-    // let DeletePerson (id: int) : ApiResult<Id> =
-    //     lock people <| fun () ->
-    //         match people.TryGetValue(id) with
-    //         | true, _ ->
-    //             people.Remove(id) |> ignore
-    //             Ok { id = id }
-    //         | false, _ -> personNotFound()
-
-    // // On application startup, pre-fill the database with a few people.
-    // do List.iter (CreatePerson >> ignore) [
-    //     { id = 0
-    //       firstName = "Alonzo"
-    //       lastName = "Church"
-    //       born = DateTime(1903, 6, 14)
-    //       died = Some(DateTime(1995, 8, 11)) }
-    //     { id = 0
-    //       firstName = "Alan"
-    //       lastName = "Turing"
-    //       born = DateTime(1912, 6, 23)
-    //       died = Some(DateTime(1954, 6, 7)) }
-    //     { id = 0
-    //       firstName = "Bertrand"
-    //       lastName = "Russell"
-    //       born = DateTime(1872, 5, 18)
-    //       died = Some(DateTime(1970, 2, 2)) }
-    //     { id = 0
-    //       firstName = "Noam"
-    //       lastName = "Chomsky"
-    //       born = DateTime(1928, 12, 7)
-    //       died = None }
-    // ]
-
 /// The server side website, tying everything together.
 module Site =
     open WebSharper.UI
@@ -634,32 +520,7 @@ module Site =
         | GetTweets -> JsonContent (Backend.GetTweets ())
         | PostRetweets postRetweets-> JsonContent(Backend.PostRetweets postRetweets)
         
-        
-
-        // | GetPeople ->
-        //     JsonContent (Backend.GetPeople ())
-        // | GetPerson id ->
-        //     JsonContent (Backend.GetPerson id)
-        // | RegisterUser registerData ->
-        //     JsonContent (Backend.RegisterUser registerData)
-        // | EditPerson personData ->
-        //     JsonContent (Backend.EditPerson personData)
-        // | DeletePerson id ->
-        //     JsonContent (Backend.DeletePerson id)
-
-    /// A simple HTML home page.
-    // let HomePage (ctx: Context<EndPoint>) : Async<Content<EndPoint>> =
-    //     // Type-safely creates the URI: "/api/people/1"
-    //     let person1Link = ctx.Link (Api (Cors.Of (GetPerson 1)))
-    //     Content.Page(
-    //         Body = [
-    //             p [] [text "API is running."]
-    //             p [] [
-    //                 text "Try querying: "
-    //                 a [attr.href person1Link] [text person1Link]
-    //             ]
-    //         ]
-    //     )
+     
 
     /// The Sitelet parses requests into EndPoint values
     /// and dispatches them to the content function.
