@@ -50,6 +50,13 @@ module Model =
             word : string
         }
 
+
+    type PostRetweetData = 
+        {
+            tweetId : string
+            username : string
+        }
+
     /// The type of REST API endpoints.
     /// This defines the set of requests accepted by our API.
     type ApiEndPoint =
@@ -63,6 +70,8 @@ module Model =
         | [<EndPoint "POST /subscribe"; Json "subscribeData">] PostSubscribe of subscribeData: SubscribeData
         | [<EndPoint "GET /tweets/hashtag">] GetHashtag of word: string
         | [<EndPoint "GET /tweets/mentiontag">] GetMentiontag of word: string
+        | [<EndPoint "GET /retweets">] GetRetweet of id: string
+        | [<EndPoint "POST /postRetweets"; Json "postRetweets">] PostRetweets of postRetweets: PostRetweetData
 
 
 
@@ -120,10 +129,10 @@ module Model =
     // type Username = { username : string }
     type Resp = { resp: string }
 
-    type SubscribeResponse = 
-        {
-            resp: list<string>
-        }
+    // type SubscribeResponse = 
+    //     {
+    //         resp: list<string>
+    //     }
 
     type HashTagResponse= 
         {
@@ -144,11 +153,7 @@ module Model =
         }
 
 
-    type people =  
-        {
-            finalArr : Dictionary<string, SubscribeResponse>
 
-        } 
 
    
 
@@ -180,8 +185,7 @@ module Backend =
     let mutable allUsersMap : Map<string, bool> = Map.empty
     let mutable followersMap : Map<String, list<string>> = Map.empty
     let mutable followingMap : Map<String, list<string>> = Map.empty    
-
-
+    let mutable finalStr : list<string> = List.empty  
 
 
     ///////////////////////////////////// 
@@ -197,9 +201,8 @@ module Backend =
         final
 
     let CreateUser (data: UserData): ApiResult<Resp> =
-        printfn "\nLOG: User %A attempting to create an account. %A" data.userId data.status
         if allUsers.Contains(data.userId) then
-            let err = sprintf "User already exists in the registry"
+            let err = sprintf "User already registered."
             // Error(Http.Status.Forbidden, {error = err})
             Ok { resp = err }
         else 
@@ -210,11 +213,13 @@ module Backend =
             allUsersMap <- allUsersMap.Add(data.userId, status)
             followingMap <- followingMap.Add(data.userId, List.empty)
             followersMap <- followersMap.Add(data.userId, List.empty)
-            Ok { resp = data.userId }
+            printfn "\nLOG: User %A registered." data.userId
+            printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets 
+            Ok { resp = data.userId + " registered."}
 
 
     let LoginUser(data:LoginData) : ApiResult<Resp> = 
-        printfn "\nLOG: User %A attempting to login. %A" data.userId
+      
         
         if allUsers.Contains(data.userId) then
             if not(setOfLoggedInUsers.Contains(data.userId)) then
@@ -226,8 +231,10 @@ module Backend =
                     allUsersMap <- allUsersMap.Add(data.userId, finalStatus)
                     loggedInUsers <- loggedInUsers + 1
                     loggedOutUsers <- loggedOutUsers - 1
-                    printfn "User %A Logged in" data.userId
-                    Ok { resp = data.userId }
+                    printfn "\nLOG: User %A Logged in" data.userId
+                    printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets 
+
+                    Ok { resp = data.userId + " logged in." }
                 | None ->
                     let err = sprintf "Key does not exist"
                     // Error(Http.Status.Forbidden, {error = err})
@@ -246,7 +253,7 @@ module Backend =
 
 
     let LogoutUser(data:LoginData) : ApiResult<Resp> = 
-        printfn "\nLOG: User %A attempting to logout. %A" data.userId
+        printfn "\nLOG: User %A attempting to logout" data.userId
         
         if allUsers.Contains(data.userId) then
             if (setOfLoggedInUsers.Contains(data.userId)) then
@@ -257,9 +264,10 @@ module Backend =
                     allUsersMap <- allUsersMap.Add(data.userId, finalStatus)
                     loggedInUsers <- loggedInUsers - 1
                     loggedOutUsers <- loggedOutUsers + 1
-                    printfn "User %A Logged out" data.userId
-                    printfn "%b" finalStatus
-                    Ok { resp = data.userId }
+                    printfn "\nLOG: User %A Logged out" data.userId
+                    printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets 
+
+                    Ok { resp = data.userId + " logged out succesfully."}
                 | None ->
                     let err = sprintf "Key does not exist"
                     Ok { resp = err }
@@ -280,11 +288,9 @@ module Backend =
     let splitLine = (fun (line:string)->Seq.toList(line.Split " "))
 
 
-    let PostTweet(data:TweetData) : ApiResult<TweetResp> = 
+    let PostTweet(data:TweetData) : ApiResult<Resp> = 
         let username = data.userId
         let tweet = data.tweet
-        
-        printfn "Length of Tweet %i" tweet.Length
         
         if allUsers.Contains(username) then
             if setOfLoggedInUsers.Contains(username) then
@@ -318,29 +324,29 @@ module Backend =
                             mapUserToMentionTags <- mapUserToMentionTags.Add(value.[1..value.Length-1], mapUserToMentionTags.[value.[1..value.Length-1]].Add(tweet))
                            
 
-                printfn "Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets
+                printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets
 
-                printfn "User to Tweets: %A" mapUserNametoTweets
-                printfn "User to Hastags: %A" mapUserToHashTags
-                printfn "User to Mentions: %A" mapUserToMentionTags
+                printfn "\nLOG: User to Tweets: %A" mapUserNametoTweets
+                printfn "\nLOG: User to Hastags: %A" mapUserToHashTags
+                printfn "\nLOG: User to Mentions: %A" mapUserToMentionTags
 
 
-                printfn "User %s Tweeted:  \"%s\" " username tweet
+                printfn "\nLOG: User %s Tweeted:  \"%s\" " username tweet
 
                 
                 totalTweets<- totalTweets + 1
 
+                let str = sprintf "User %s Tweeted: %s" username tweet
 
-
-                Ok{userId = username ; tweet =  tweet}
+                Ok{resp = str}
             else 
                 let err = sprintf "User not logged in."
-                Ok { userId = ""; tweet = err }
+                Ok { resp = err }
 
                 // Error(Http.Status.Forbidden, {error = err}) 
         else 
             let err = sprintf "User is not registered."
-            Ok { userId = "" ; tweet = err }
+            Ok { resp = err }
             
             
 
@@ -353,8 +359,9 @@ module Backend =
         let isFollowedBy = data.userId2
 
         if isFollowedBy = wantsToFollow then
-            let err = sprintf "User cannot followItself."
-            Error(Http.Status.Forbidden, {error = err})
+            let err = sprintf "User cannot follow itself."
+            Ok { resp = err }
+            // Error(Http.Status.Forbidden, {error = err})
         elif allUsers.Contains(wantsToFollow) then
             if allUsers.Contains(isFollowedBy) then
                 if setOfLoggedInUsers.Contains(wantsToFollow) then
@@ -368,7 +375,7 @@ module Backend =
                     let mutable temp1 = followingMap.Item(wantsToFollow)
                     
                     if alreadyFollowing then
-                        let err = sprintf "%s alrready follows %s." wantsToFollow isFollowedBy
+                        let err = sprintf "%s already follows %s." wantsToFollow isFollowedBy
                         Ok { resp = err }
 
                         // Error(Http.Status.Forbidden, {error = err})
@@ -377,10 +384,10 @@ module Backend =
                         followersMap <- followersMap.Add(isFollowedBy, temp)
                         temp1<-temp1 @ [isFollowedBy]
                         followingMap <- followingMap.Add(wantsToFollow, temp1)
-                        printfn "User %s started following User %s" wantsToFollow isFollowedBy
+                        printfn "\nLOG: User %s started following User %s" wantsToFollow isFollowedBy
                         let finalStr = sprintf "User %s started following %s" wantsToFollow isFollowedBy
-                        printfn "Following Map: %A" followingMap
-                        printfn "Followers Map: %A" followersMap
+                        printfn "\nLOG: Following Map: %A" followingMap
+                        printfn "\nLOG: Followers Map: %A" followersMap
                         Ok{resp = finalStr}
                 else
                     let err = sprintf "%s please login to follow %s" wantsToFollow isFollowedBy
@@ -400,7 +407,7 @@ module Backend =
 
 
 
-    let PostSubscribe(data:SubscribeData) : ApiResult<SubscribeResponse> = 
+    let PostSubscribe(data:SubscribeData) : ApiResult<GetAllTweets> = 
         let username = data.userId
         let mutable followersSet : list<string> = List.empty
         if allUsers.Contains(username) then
@@ -411,57 +418,42 @@ module Backend =
                 | Some x-> 
                     if x.Length = 0 then
                         let err = sprintf "%s must follow first to get subscribed tweets" username
-                        Error(Http.Status.Forbidden, {error = err})
+                        Ok { foundTweets = [err] }
+
+                        // Error(Http.Status.Forbidden, {error = err})
                     else 
                         followersSet<- followersSet @ followingMap.Item(username)
-                        let mutable finalStr : list<string> = List.empty  
+                        
                         for follower in [0..followersSet.Length-1] do
-                            let mutable sendStr = ""
+                            let mutable sendStr : list<string> = List.Empty
                             if(mapUserNametoTweets.ContainsKey(followersSet.[follower])) then
                                 let mutable temp = mapUserNametoTweets.Item(followersSet.[follower])
                                 for tweet in [0..temp.Length-1] do
-                                    sendStr <- sendStr + sprintf "%s Tweeted: \"%s\"" followersSet.[follower] temp.[tweet]
+                                    sendStr <- sendStr @ [ temp.[tweet] ]
                           
-                            finalStr <- finalStr @ [sendStr]
+                            finalStr <- finalStr @ sendStr
 
                             
-                        Ok{resp = finalStr}
-                        // sender <! finalStr  
+                        Ok{foundTweets = finalStr}
+
 
                 | None -> 
                     let mutable abc : list<string> = List.empty  
                    
-                    Ok{resp = abc}
+                    Ok{foundTweets = abc}
                     
-
-                
-
-
-
-
-                // if(tempList.Length = 0) then
-                //    sender <! sprintf "%s must follow first to get subscribed tweets" username
-                // else 
-                //     followers <- followers @ followingMap.Item(username)
-                //     let mutable finalStr = ""   
-                //     for follower in [0..followers.Length-1] do
-                //         let mutable sendStr = ""
-                //         if(mapUserNametoTweets.ContainsKey(followers.[follower])) then
-                //             let mutable temp = mapUserNametoTweets.Item(followers.[follower])
-                //             for tweet in [0..temp.Length-1] do
-                //                 sendStr <- sendStr + sprintf "%s Tweeted: \"%s\"\n" followers.[follower] temp.[tweet]
-                      
-                //         finalStr <- finalStr + sendStr
-                //     sender <! finalStr       
                                                  
             else
                 let err = sprintf "%s is not logged in. Please Login" username
-                Error(Http.Status.Forbidden, {error = err})
+                // Error(Http.Status.Forbidden, {error = err})
+                Ok { foundTweets = [err] }
+
                 
         else
             let err = sprintf "%s is not registered. Please Register" username
-            Error(Http.Status.Forbidden, {error = err})
-            
+            // Error(Http.Status.Forbidden, {error = err})
+            Ok { foundTweets = [err] }
+
 
     let hashtagNotFound() : ApiResult<'T> =
         Error (Http.Status.NotFound, { error = "HashTag not found." })
@@ -474,13 +466,11 @@ module Backend =
         let mutable finalTweets : list<string> = List.Empty
         for KeyValue(_, tweet) in mapUserNametoTweets do
             finalTweets<- finalTweets @ tweet
+        
+        printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets 
 
         Ok{foundTweets = finalTweets}
-        // lock mapUserNametoTweets <| fun () ->
-        //     mapUserNametoTweets
-        //     |> Seq.map (fun (KeyValue(_, tweet)) -> tweet)
-        //     |> Array.ofSeq
-        //     |> Ok {foundTweets = }
+
     
 
     let GetHashtag (word: string) : ApiResult<HashTagResponse> =
@@ -489,6 +479,9 @@ module Backend =
         match mapUserToHashTags.TryGetValue(word) with
         | true, tweets -> Ok {foundTweets = tweets}
         | false, _ -> hashtagNotFound()
+
+     
+   
 
 
 
@@ -499,13 +492,41 @@ module Backend =
         | true, tweets -> Ok {foundTweets = tweets}  
         | false, _ -> mentiontagNotFound()
 
-    
    
+    let GetRetweet(id:string) : ApiResult<Resp> = 
+        let finalId = id |> int
+        let str = finalStr.[finalId-1]
+        Ok{resp = str}
+
+
+
+    let PostRetweets (word:PostRetweetData) : ApiResult<Resp> =
+        let tweetId = word.tweetId |> int
         
+        let username = word.username
+       
+        let mutable retweet : string = "RE: " + finalStr.[tweetId-1]
+                    
+        
+        
+        if mapUserNametoTweets.ContainsKey(username) then
+            let mutable temp = mapUserNametoTweets.Item(username)
+            temp <- temp @ [retweet]
+            mapUserNametoTweets <- mapUserNametoTweets.Add(username, temp)
+        else 
+            mapUserNametoTweets <- mapUserNametoTweets.Add(username, list.Empty)
+            let mutable temp = mapUserNametoTweets.Item(username)
+            temp <- temp @ [retweet]
+            mapUserNametoTweets <- mapUserNametoTweets.Add(username, temp)
+        
+        totalReTweets <- totalReTweets + 1
+        totalTweets<- totalTweets + 1
+        printfn "\nLOG: Total Registered Users: %i\nTotal Online Users: %i\nTotal Offline Users: %i\nTotal Tweets: %i\nTotal ReTweets: %i\n" totalUsers loggedInUsers loggedOutUsers totalTweets totalReTweets 
+        printfn "%A " mapUserNametoTweets
+        
+        Ok{resp = "Done"}     
 
 
-
-    
 
     /// The people database.
     /// This is a dummy implementation, of course; a real-world application
@@ -609,8 +630,10 @@ module Site =
         | PostSubscribe subscribeData-> JsonContent(Backend.PostSubscribe subscribeData)
         | GetHashtag word -> JsonContent(Backend.GetHashtag word)
         | GetMentiontag word -> JsonContent(Backend.GetMentiontag word)
-        // | GetHashtagMentiontag hashtagMentiontag -> JsonContent(Backend.GetHashtagMentiontag hashtagMentiontag)
+        | GetRetweet id -> JsonContent(Backend.GetRetweet id)
         | GetTweets -> JsonContent (Backend.GetTweets ())
+        | PostRetweets postRetweets-> JsonContent(Backend.PostRetweets postRetweets)
+        
         
 
         // | GetPeople ->
@@ -643,7 +666,6 @@ module Site =
     let Main corsAllowedOrigins : Sitelet<EndPoint> =
         Application.MultiPage (fun ctx endpoint ->
             match endpoint with
-            // | Home -> HomePage ctx
             | Api api ->
                 Content.Cors api (fun allows ->
                     { allows with
@@ -651,4 +673,6 @@ module Site =
                         Headers = ["Content-Type"]
                     }
                 ) ApiContent
+
+
         )
