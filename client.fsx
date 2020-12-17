@@ -16,14 +16,14 @@ let registerUser userName =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
 
     
-    let a = FSharp.Data.JsonValue.Parse(response1)
-    let c = a.GetProperty("resp")
+    let responseJson = FSharp.Data.JsonValue.Parse(response1)
+    let returnedJson = responseJson.GetProperty("resp")
     
-    c
+    returnedJson
 
 
 
@@ -41,12 +41,12 @@ let loginUser userName =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
-    let a = FSharp.Data.JsonValue.Parse(response1)
-    let c = a.GetProperty("resp")
+    let responseJson = FSharp.Data.JsonValue.Parse(response1)
+    let returnedJson = responseJson.GetProperty("resp")
     
-    c
+    returnedJson
 
 
 
@@ -62,14 +62,14 @@ let logoutUser userName =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
 
 
-    let a = FSharp.Data.JsonValue.Parse(response1)
-    let c = a.GetProperty("resp")
+    let responseJson = FSharp.Data.JsonValue.Parse(response1)
+    let returnedJson = responseJson.GetProperty("resp")
     
-    c
+    returnedJson
 
 
 
@@ -85,12 +85,12 @@ let postTweet (userName:string, tweet:string ) =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
-    let a = FSharp.Data.JsonValue.Parse(response1)
-    let c = a.GetProperty("resp")
+    let responseJson = FSharp.Data.JsonValue.Parse(response1)
+    let returnedJson = responseJson.GetProperty("resp")
     
-    c
+    returnedJson
 
 
 let followUser (userName1:string, username2:string ) =
@@ -104,26 +104,26 @@ let followUser (userName1:string, username2:string ) =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
-    let a = FSharp.Data.JsonValue.Parse(response1)
-    let c = a.GetProperty("resp")
+    let responseJson = FSharp.Data.JsonValue.Parse(response1)
+    let returnedJson = responseJson.GetProperty("resp")
     
-    c
+    returnedJson
 
 
 
 let getTweetsWithHashTag hashtagToRequest =
     try
         let url = "http://localhost:5000/api/tweets/hashtag/"+hashtagToRequest
-        let a = FSharp.Data.JsonValue.Load url
-        let c = a.GetProperty("foundTweets")
+        let responseJson = FSharp.Data.JsonValue.Load url
+        let foundResponses = responseJson.GetProperty("foundTweets")
         let mutable len=0
-        for i in c do
+        for i in foundResponses do
             len<-len+1
         if len > 0 then
             printfn "Tweets with the #%s found: " hashtagToRequest
-            for i in c do
+            for i in foundResponses do
                 printfn "%A" i
             printfn ""
             
@@ -133,14 +133,14 @@ let getTweetsWithHashTag hashtagToRequest =
 let getTweetsWithMentionTag mentionTagtoRequest =
     try
         let url = "http://localhost:5000/api/tweets/mentiontag/"+mentionTagtoRequest
-        let a = FSharp.Data.JsonValue.Load url
-        let c = a.GetProperty("foundTweets")
+        let responseJson = FSharp.Data.JsonValue.Load url
+        let foundResponses = responseJson.GetProperty("foundTweets")
         let mutable len=0
-        for i in c do
+        for i in foundResponses do
             len<-len+1
         if len > 0 then
             printfn "Tweets with the @%s found: " mentionTagtoRequest
-            for i in c do
+            for i in foundResponses do
                 printfn "%A" i
             printfn ""
             
@@ -152,14 +152,14 @@ let getTweetsWithMentionTag mentionTagtoRequest =
 let getAllLiveTweets() =
     try
         let url = "http://localhost:5000/api/tweets"
-        let a = FSharp.Data.JsonValue.Load url
-        let c = a.GetProperty("foundTweets")
+        let responseJson = FSharp.Data.JsonValue.Load url
+        let foundResponses = responseJson.GetProperty("foundTweets")
         let mutable len=0
-        for i in c do
+        for i in foundResponses do
             len<-len+1
         if len > 0 then
             printfn "All live tweets are :"
-            for i in c do
+            for i in foundResponses do
                 printfn "%A" i
             
     with
@@ -177,19 +177,19 @@ let getSubscribedTweets(username:string) =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
     try
 
-        let a = FSharp.Data.JsonValue.Parse(response1)
-        let c = a.GetProperty("foundTweets")
+        let responseJson = FSharp.Data.JsonValue.Parse(response1)
+        let foundResponses = responseJson.GetProperty("foundTweets")
         let mutable len=0
-        for i in c do
+        for i in foundResponses do
             len<-len+1
         if len > 0 then
             printfn "Your subsribed tweets are:"
             let mutable counter = 1
-            for i in c do
+            for i in foundResponses do
                 printfn "%i %A" counter i 
                 counter <- counter + 1
             printfn ""    
@@ -202,9 +202,9 @@ let getSubscribedTweets(username:string) =
 let getRetweetwithId(tweetId:string, username:string) = 
     try
         let url = "http://localhost:5000/api/retweets/"+tweetId
-        let a = FSharp.Data.JsonValue.Load url
-        let c = a.GetProperty("resp")
-        printfn "%s ReTweeted: %A\n" username c
+        let responseJson = FSharp.Data.JsonValue.Load url
+        let foundResponses = responseJson.GetProperty("resp")
+        printfn "%s ReTweeted: %A\n" username foundResponses
 
     with
     | _ -> printfn "No retweets found. "
@@ -221,7 +221,7 @@ let postRetweet(tweetId: string, username: string) =
     let r1 = response.Body
     let response1 =
         match r1 with
-        | Text a -> a
+        | Text responseJson -> responseJson
         | Binary b -> System.Text.ASCIIEncoding.ASCII.GetString b
     ()
 
